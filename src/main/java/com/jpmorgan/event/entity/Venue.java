@@ -42,7 +42,11 @@ public class Venue {
 
     public void displayAvailableSeats() {
         System.out.println("\nAvailable seats:");
-        System.out.println(String.join(",", seatOccupancyMap.keySet()));
+        seatOccupancyMap.forEach((seatNumber, isOccupied) -> {
+            if (!isOccupied) {
+                System.out.print(seatNumber + ",");
+            }
+        });
         System.out.println();
     }
 
