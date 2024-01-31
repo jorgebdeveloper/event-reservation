@@ -22,17 +22,18 @@ public class EventConstants {
                                                 (2) Buyer
                                                 (3) Exit
                                                 """;
-    public static final String ADMIN_COMMAND_PROMPT = "\nEnter Admin Command: ";
-    public static final String BUYER_COMMAND_PROMPT = "\nEnter Buyer Command: ";
+    public static final String ADMIN_COMMAND_PROMPT = "Enter Admin Command: ";
+    public static final String BUYER_COMMAND_PROMPT = "Enter Buyer Command: ";
     public static final String INVALID_USER_TYPE = "Invalid user type.";
-    public static final String SHOW_NOT_FOUND = "Show not found.";
+    public static final String SHOW_NOT_FOUND = "\nShow not found.";
     public static final String SHOW_SETUP_SUCCESS = "Show setup successfully.";
     public static final String INVALID_SETUP_PARAMETERS = "Invalid show setup parameters or show already exists.";
-    public static final String TICKET_BOOKED_SUCCESS = "Ticket booked successfully. Ticket#: %s";
+    public static final String TICKET_BOOKED_SUCCESS = "\nTicket booked successfully. Ticket#: %s";
     public static final String SELECTED_SEATS_NOT_AVAILABLE = "Selected seats are not available.";
     public static final String ONE_BOOKING_PER_PHONE = "Only one booking per phone# is allowed per show.";
-    public static final String TICKET_CANCELED_SUCCESS = "Ticket canceled successfully.";
-    public static final String INVALID_TICKET_PHONE = "Invalid ticket number or phone#.";
+    public static final String TICKET_CANCELLATION_DENIED = "The window for canceling the ticket has elapsed.";
+    public static final String TICKET_CANCELLATION_SUCCESS = "Ticket canceled successfully.";
+    public static final String INVALID_TICKET_PHONE = "No matches for ticket number or phone number.";
     public static final String INVALID_ADMIN_COMMAND = "Invalid admin command.";
     public static final String INVALID_BUYER_COMMAND = "Invalid buyer command.";
     public static final String EXIT_COMMAND_PROMPT = "Application exited successfully.";

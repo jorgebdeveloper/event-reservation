@@ -1,133 +1,135 @@
 package com.jpmorgan.event.service;
 
+import com.jpmorgan.event.repository.ShowRepository;
 import com.jpmorgan.event.constant.EventConstants;
+import com.jpmorgan.event.entity.EventParams;
 import com.jpmorgan.event.entity.Show;
-import com.jpmorgan.event.helper.EventHelper;
+import com.jpmorgan.event.entity.Ticket;
+import com.jpmorgan.event.entity.Venue;
+import com.jpmorgan.event.helper.EventServiceHelper;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class EventService {
 
-    private Map<Integer, Show> shows;
+    private final ShowRepository showRepository = ShowRepository.getInstance();
 
-    public EventService() {
-        this.shows = new HashMap<>();
+    Map<Integer, Show> getShows() {
+        return this.showRepository.getShows();
     }
 
-    public Map<Integer, Show> getShows() {
-        return shows;
+    void addShows(Integer key, Show show) {
+        this.showRepository.addShow(show);
     }
 
-    public void setShows(Map<Integer, Show> shows) {
-        this.shows = shows;
+    void clearShows() {
+        this.showRepository.clearShows();
     }
 
-    public void reset() {
-        this.shows.clear();
-    }
+    public void setupShow(EventParams params) {
 
-    public void setupShow(int showNumber, int numRows, int seatsPerRow, int cancellationWindow) {
-
-        if (!EventHelper.areShowParamsValid(shows, showNumber, numRows, seatsPerRow)) {
+        if (!EventServiceHelper.areShowParamsValid(getShows(), params)) {
             System.out.println(EventConstants.INVALID_SETUP_PARAMETERS);
             return;
         }
 
-        Show show = new Show(showNumber, numRows, seatsPerRow);
-        show.setCancellationWindow(cancellationWindow);
-        shows.put(showNumber, show);
+        Show show = new Show(params.getShowNumber(),
+                                new Venue(params.getNumRows(),
+                                params.getSeatsPerRow()),
+                                params.getCancellationWindow());
+        show.setCancellationWindow(params.getCancellationWindow());
+        showRepository.addShow(show);
         System.out.println(EventConstants.SHOW_SETUP_SUCCESS);
 
-        EventHelper.displayShowSetupDetails(shows);
+        EventServiceHelper.displayShowSetupDetails(getShows());
     }
 
-    public void viewShow(int showNumber) {
-        if (shows.containsKey(showNumber)) {
-            shows.get(showNumber).view();
-        } else {
+    public void viewShow(EventParams params) {
+        Map<Integer, Show> shows = getShows();
+        if (!shows.containsKey(params.getShowNumber())) {
             System.out.println(EventConstants.SHOW_NOT_FOUND);
+            return;
         }
+        shows.get(params.getShowNumber()).view();
     }
 
-    public void changeCancellationWindow(int showNumber, int newCancellationWindow) {
-        if (!shows.containsKey(showNumber)) {
+    public void changeCancellationWindow(EventParams params) {
+        Map<Integer, Show> shows = getShows();
+        if (!shows.containsKey(params.getShowNumber())) {
             System.out.println(EventConstants.SHOW_NOT_FOUND);
-            System.out.println("Modification of cancellation window");
             return;
         }
 
-        Show show = shows.get(showNumber);
-        int oldCancellationWindow = show.getCancellationWindow();
-        show.setCancellationWindow(newCancellationWindow);
+        System.out.println("Modification of cancellation window");
+
+        Show show = shows.get(params.getShowNumber());
+        long oldCancellationWindow = show.getCancellationWindow();
+        show.setCancellationWindow(params.getNewCancellationWindow());
 
         System.out.println(String.format(
                 EventConstants.CANCELLATION_WINDOW_CHANGED_SUCCESS,
-                showNumber,
+                params.getShowNumber(),
                 oldCancellationWindow,
-                newCancellationWindow
+                params.getNewCancellationWindow()
         ));
     }
 
-    public void showAvailability(int showNumber) {
-        if (shows.containsKey(showNumber)) {
-            shows.get(showNumber).showAvailability();
-        } else {
+    public void showAvailability(EventParams params) {
+        Map<Integer, Show> shows = getShows();
+        if (0 >= params.getShowNumber() || !shows.containsKey(params.getShowNumber())) {
             System.out.println(EventConstants.SHOW_NOT_FOUND);
+            return;
         }
+        shows.get(params.getShowNumber()).getVenue().displayAvailableSeats();
     }
 
-    public void bookTicket(int showNumber, String phone, String seats) {
-        Show show = shows.getOrDefault(showNumber, null);
+    public void bookTicket(EventParams params) {
+        Show show = getShows().getOrDefault(params.getShowNumber(), null);
 
         if (show == null) {
             System.out.println(EventConstants.SHOW_NOT_FOUND);
             return;
         }
 
-        if (EventHelper.isPhoneNumberBooked(show, phone)) {
+        if (EventServiceHelper.isPhoneNumberBooked(show, params.getPhone())) {
             System.out.println(EventConstants.ONE_BOOKING_PER_PHONE);
             return;
         }
 
-        String[] requestedSeats = seats.split(",");
-        if (!EventHelper.areSeatsAvailable(show, requestedSeats)) {
+        String[] requestedSeats = params.getSeats().split(",");
+        if (!EventServiceHelper.areSeatsAvailable(show.getVenue(), requestedSeats)) {
             System.out.println(EventConstants.SELECTED_SEATS_NOT_AVAILABLE);
             return;
         }
 
-        String ticketNumber = show.generateTicketNumber();
-        Arrays.stream(requestedSeats).forEach(seat -> show.getSeatsAvailability().put(seat, false));
+        Arrays.stream(requestedSeats).forEach(seat -> show.getVenue().occupySeat(seat));
 
-        Map<String, String> bookingDetails = new HashMap<>();
-        bookingDetails.put("buyerPhone", phone);
-        bookingDetails.put("seatNumbers", String.join(",", seats));
-        show.getBookedSeats().put(ticketNumber, bookingDetails);
-
-        show.getBookedTimestamp().put(ticketNumber, System.currentTimeMillis());
+        String ticketNumber = UUID.randomUUID().toString();
+        show.addTicket(ticketNumber, new Ticket(ticketNumber, params.getSeats(), params.getPhone()));
         System.out.println(String.format(EventConstants.TICKET_BOOKED_SUCCESS, ticketNumber));
     }
 
-    public void cancelTicket(int showNumber, String ticketNumber, String phone) {
-        if (!shows.containsKey(showNumber)) {
+    public void cancelTicket(EventParams params) {
+        Map<Integer, Show> shows = getShows();
+        if (!shows.containsKey(params.getShowNumber())) {
             System.out.println(EventConstants.SHOW_NOT_FOUND);
             return;
         }
 
-        Show show = shows.get(showNumber);
+        Show show = shows.get(params.getShowNumber());
 
-        if (show == null || !show.isValidCancellation(ticketNumber, phone)) {
-            System.out.println("Invalid ticket cancellation");
+        if (!show.isValidCancellation(params.getTicketNumber(), params.getPhone())) {
+            System.out.println(EventConstants.TICKET_CANCELLATION_DENIED);
             return;
         }
 
-        Arrays.stream(show.getBookedSeats().get(ticketNumber).get("seatNumbers").split(","))
-                .forEach(seat -> show.getSeatsAvailability().put(seat, true));
+        Arrays.stream(show.getTicketMap().get(params.getTicketNumber()).getSeats().split(","))
+                .forEach(seat -> show.getVenue().vacateSeat(seat));
 
-        show.getBookedSeats().remove(ticketNumber);
-        show.getBookedTimestamp().remove(ticketNumber);
-        System.out.println(EventConstants.TICKET_CANCELED_SUCCESS);
+        show.getTicketMap().remove(params.getTicketNumber());
+        System.out.println(EventConstants.TICKET_CANCELLATION_SUCCESS);
     }
 
 }
