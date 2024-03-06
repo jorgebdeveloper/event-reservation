@@ -1,4 +1,6 @@
 # Event Reservation Application
+Demonstration of plain java implementation with unit testing and clean code practices. 
+
 This Java application allows users to book and manage seats for shows. 
 The program supports two types of users: Admin and Buyer. 
 Admins can set up shows and view show details, 
